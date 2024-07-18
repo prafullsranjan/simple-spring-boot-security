@@ -2,13 +2,12 @@ package code.prafullranjan.springsecurityjwt.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,10 +34,10 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts
                 .parser()
-                .setSigningKey(getSignKey())
+                .verifyWith(getSignKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -62,12 +61,12 @@ public class JwtService {
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 10000*60^30))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .signWith(getSignKey())
                 .compact();
     }
 
-    private Key getSignKey() {
+    private SecretKey getSignKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 }
